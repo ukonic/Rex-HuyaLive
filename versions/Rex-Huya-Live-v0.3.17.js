@@ -8,7 +8,7 @@
 var WidgetMetadata = {
   id: "com.local.rex.huya.live.test",
   title: "虎牙直播 v0.3.17",
-  description: "虎牙推荐、完整分类、状态兜底、未开播主播搜索和动态 HLS 多线路播放。",
+  description: "在 Rex 中浏览、搜索和播放虎牙直播，提供分类导航、房间状态识别和多线路播放能力。",
   author: "ukonic",
   version: "0.3.17",
   requiredVersion: "0.0.1",
