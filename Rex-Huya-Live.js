@@ -1,16 +1,16 @@
 /* WidgetMetadata {
   "id": "com.local.rex.huya.live.test",
-  "title": "虎牙直播 v0.3.17",
-  "version": "0.3.17",
+  "title": "虎牙直播 v0.3.18",
+  "version": "0.3.18",
   "author": "ukonic"
 } */
 
 var WidgetMetadata = {
   id: "com.local.rex.huya.live.test",
-  title: "虎牙直播 v0.3.17",
+  title: "虎牙直播 v0.3.18",
   description: "在 Rex 中浏览、搜索和播放虎牙直播，提供分类导航、房间状态识别和多线路播放能力。",
   author: "ukonic",
-  version: "0.3.17",
+  version: "0.3.18",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   modules: [
@@ -477,8 +477,8 @@ function huyaItem(data) {
     genreTitle: area || "虎牙直播",
     genreItems: gameId && area ? [{ id: gameId, title: area }] : [],
     peoples: nick ? [{ id: roomId, title: nick, avatar: avatar, role: "主播" }] : [],
-    // 直播间是单个可播放对象，使用 movie 避免被当成无剧集的电视剧。
-    mediaType: "movie",
+    // Rex 1.1 (3) 起新增直播与回看位置识别；直播中房间试用 live，未开播仍按单个 movie 条目展示。
+    mediaType: isLive ? "live" : "movie",
     link: pageUrl,
     playerType: "app",
     durationText: isLive ? "直播中" : "未开播"
