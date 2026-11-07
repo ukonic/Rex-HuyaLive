@@ -116,7 +116,7 @@ https://www.huya.com/g/2135
 当前版本锁定地址：
 
 ```text
-https://raw.githubusercontent.com/ukonic/Rex-HuyaLive/main/versions/Rex-Huya-Live-v0.3.17.js
+https://raw.githubusercontent.com/ukonic/Rex-HuyaLive/main/versions/Rex-Huya-Live-v0.3.19.js
 ```
 
 ## 当前限制

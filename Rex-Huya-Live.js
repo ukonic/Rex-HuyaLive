@@ -1,16 +1,16 @@
 /* WidgetMetadata {
   "id": "com.local.rex.huya.live.test",
-  "title": "虎牙直播 v0.3.17",
-  "version": "0.3.17",
+  "title": "虎牙直播 v0.3.19",
+  "version": "0.3.19",
   "author": "ukonic"
 } */
 
-var WidgetMetadata = {
+WidgetMetadata = {
   id: "com.local.rex.huya.live.test",
-  title: "虎牙直播 v0.3.17",
+  title: "虎牙直播 v0.3.19",
   description: "在 Rex 中浏览、搜索和播放虎牙直播，提供分类导航、房间状态识别和多线路播放能力。",
   author: "ukonic",
-  version: "0.3.17",
+  version: "0.3.19",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   modules: [
@@ -349,6 +349,40 @@ function huyaRoomId(value) {
   return input.replace(/^\/+|\/+$/g, "").split(/[?#]/)[0];
 }
 
+function huyaOwnedRoute(value) {
+  var input = huyaText(value).trim();
+  if (!input) return null;
+  var match = input.match(/^https?:\/\/(?:www\.)?huya\.com(\/[^?#]*)?(?:\?([^#]*))?(?:#.*)?$/i);
+  if (!match) return null;
+  var path = match[1] || "/";
+  var query = huyaQueryParse(match[2] || "");
+
+  if (path === "/") {
+    if (Object.prototype.hasOwnProperty.call(query, "rexCategoryMessage")) {
+      return { kind: "message", query: query, link: input };
+    }
+    return null;
+  }
+
+  var categoryMatch = path.match(/^\/g\/(\d+)\/?$/i);
+  if (categoryMatch) {
+    return { kind: "category", gameId: categoryMatch[1], query: query, link: input };
+  }
+
+  var roomMatch = path.match(/^\/([^/]+)\/?$/);
+  if (!roomMatch) return null;
+  var roomId;
+  try { roomId = decodeURIComponent(roomMatch[1]); } catch (error) { return null; }
+  if (!/^[A-Za-z0-9_-]+$/.test(roomId)) return null;
+  return {
+    kind: "room",
+    roomId: roomId,
+    isOffline: query.rexOffline === "1",
+    query: query,
+    link: input
+  };
+}
+
 function huyaGameId(data) {
   var raw = data && (data.gameId || data.gid || data.game_id || data.gameHostId);
   if (raw && typeof raw === "object" && raw.value !== undefined) raw = huyaText(raw.value).split(",")[0];
@@ -535,7 +569,7 @@ function huyaOfflineSearchItem(data) {
     gameId: gameId,
     isLive: false
   });
-  item.id = link;
+  item.id = pageUrl;
   item.link = link;
   var description = ["状态：暂未开播", "主播：" + nick];
   huyaPushDetailLine(description, "最近标题", intro);
@@ -547,13 +581,11 @@ function huyaOfflineSearchItem(data) {
 }
 
 function huyaOfflineDataFromLink(link) {
-  var input = huyaText(link);
-  var queryIndex = input.indexOf("?");
-  if (queryIndex < 0) return null;
-  var query = huyaQueryParse(input.slice(queryIndex + 1));
-  if (query.rexOffline !== "1") return null;
+  var route = huyaOwnedRoute(link);
+  if (!route || route.kind !== "room" || !route.isOffline) return null;
+  var query = route.query;
   return {
-    roomId: huyaRoomId(input),
+    roomId: route.roomId,
     nick: huyaText(query.nick).trim(),
     avatar: huyaHttps(query.avatar),
     intro: huyaText(query.intro).trim()
@@ -600,8 +632,8 @@ function huyaOfflineItemForLink(link, roomId, data) {
     gameId: data.gameId,
     isLive: false
   });
-  // 保留观看记录原来的 URL，避免离线刷新产生新的历史/收藏身份。
-  item.id = link;
+  // id 始终使用房间主页，link 可保留未开播详情参数，避免资料变化制造重复身份。
+  item.id = HUYA_BASE + "/" + encodeURIComponent(roomId);
   item.link = link;
   return item;
 }
@@ -659,8 +691,8 @@ async function huyaLoadCategoryCatalog() {
 }
 
 function huyaCategoryIdFromLink(value) {
-  var match = huyaText(value).match(/huya\.com\/g\/(\d+)/i);
-  return match ? match[1] : "";
+  var route = huyaOwnedRoute(value);
+  return route && route.kind === "category" ? route.gameId : "";
 }
 
 function huyaCategoryCard(entry) {
@@ -679,8 +711,7 @@ function huyaCategoryCard(entry) {
     posterPath: cover,
     genreTitle: group,
     mediaType: "movie",
-    link: link,
-    playerType: "app"
+    link: link
   };
 }
 
@@ -694,15 +725,14 @@ function huyaMessageCard(title, description, key) {
     description: description,
     genreTitle: "分类查询",
     mediaType: "movie",
-    link: link,
-    playerType: "app"
+    link: link
   };
 }
 
 function huyaMessageCardFromLink(link) {
-  if (huyaText(link).indexOf("rexCategoryMessage=") < 0) return null;
-  var query = huyaText(link).split("?")[1] || "";
-  var params = huyaQueryParse(query);
+  var route = huyaOwnedRoute(link);
+  if (!route || route.kind !== "message") return null;
+  var params = route.query;
   return huyaMessageCard(
     huyaText(params.title) || "分类查询提示",
     huyaText(params.description) || "请修改查询条件后重试",
@@ -1345,13 +1375,15 @@ async function huyaCategoryDetail(gameId) {
 }
 
 async function loadDetail(link) {
+  var route = huyaOwnedRoute(link);
+  if (!route) return null;
   var messageItem = huyaMessageCardFromLink(link);
   if (messageItem) return messageItem;
   var categoryId = huyaCategoryIdFromLink(link);
   if (categoryId) return huyaCategoryDetail(categoryId);
   var offlineData = huyaOfflineDataFromLink(link);
   var offlineItem = huyaOfflineItemFromLink(link);
-  var roomId = huyaRoomId(link);
+  var roomId = route.kind === "room" ? route.roomId : "";
   if (!roomId) return null;
   var snapshot;
   try {
@@ -1664,12 +1696,11 @@ async function huyaLoadResourcesOnce(roomId) {
 
 async function loadResource(params) {
   params = params || {};
-  var target = params.link || params.id;
-  if (huyaCategoryIdFromLink(target) || huyaText(target).indexOf("rexCategoryMessage=") >= 0) {
-    throw new Error("这是分类查询卡片，请在详情页选择正在直播的房间");
-  }
-  var roomId = huyaRoomId(target);
-  if (!roomId) throw new Error("缺少虎牙房间号");
+  var hasLink = params.link !== null && params.link !== undefined && huyaText(params.link).trim() !== "";
+  var target = hasLink ? params.link : params.id;
+  var route = huyaOwnedRoute(target);
+  if (!route || route.kind !== "room") return [];
+  var roomId = route.roomId;
   try {
     return await huyaLoadResourcesOnce(roomId);
   } catch (firstError) {
