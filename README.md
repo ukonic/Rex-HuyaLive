@@ -39,7 +39,7 @@ https://raw.githubusercontent.com/ukonic/Rex-HuyaLive/main/Rex-Huya-Live.js
 - 推荐直播列表，支持分页加载
 - 热门分类快捷入口
 - 网游竞技、单机游戏、手机游戏和娱乐生活分区
-- 按中文名称查找虎牙分类
+- 按中文名称查找虎牙分类，匹配结果支持分页
 - 支持自定义虎牙游戏 ID
 
 ### 搜索与房间
@@ -47,8 +47,8 @@ https://raw.githubusercontent.com/ukonic/Rex-HuyaLive/main/Rex-Huya-Live.js
 - 按关键词或主播名搜索直播
 - 可选填写房间号，直接查找指定直播间
 - 支持输入完整虎牙房间链接
-- 可选择在搜索结果中显示未开播主播
-- 未开播主播只出现在搜索结果末尾，不会混入推荐、分类或相关直播列表
+- 默认包含未开播主播，可在搜索参数中关闭
+- 按关键词或主播名搜索时，未开播主播排在直播结果之后；按房间号精确搜索时，已确认未开播的房间会显示「未开播」卡片
 
 ### 状态与详情
 
@@ -75,7 +75,7 @@ https://raw.githubusercontent.com/ukonic/Rex-HuyaLive/main/Rex-Huya-Live.js
 | 单机游戏 | 单机、主机、沙盒与生存游戏直播 |
 | 手机游戏 | 热门手游与休闲手游直播 |
 | 娱乐生活 | 户外、才艺、体育、一起看等内容 |
-| 按名称查找分类 | 不知道游戏 ID 时按中文名称查询 |
+| 按名称查找分类 | 按中文名称查询分类并分页浏览匹配结果 |
 | 指定虎牙房间 | 输入房间号或完整虎牙房间链接 |
 | 自定义游戏 ID | 使用虎牙分类网址 `/g/` 后的数字 |
 
@@ -116,8 +116,18 @@ https://www.huya.com/g/2135
 当前版本锁定地址：
 
 ```text
-https://raw.githubusercontent.com/ukonic/Rex-HuyaLive/main/versions/Rex-Huya-Live-v0.3.19.js
+https://raw.githubusercontent.com/ukonic/Rex-HuyaLive/main/versions/Rex-Huya-Live-v0.3.20.js
 ```
+
+## 本地回归测试
+
+在仓库根目录运行：
+
+```sh
+node tests/test-v0.3.20.js
+```
+
+测试覆盖详情链接处理、房间标识、分类分页与缓存、未开播房间号搜索。
 
 ## 当前限制
 
