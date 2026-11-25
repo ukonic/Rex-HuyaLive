@@ -1,16 +1,16 @@
 /* WidgetMetadata {
   "id": "com.local.rex.huya.live.test",
-  "title": "虎牙直播 v0.3.19",
-  "version": "0.3.19",
+  "title": "虎牙直播 v0.3.20",
+  "version": "0.3.20",
   "author": "ukonic"
 } */
 
 WidgetMetadata = {
   id: "com.local.rex.huya.live.test",
-  title: "虎牙直播 v0.3.19",
+  title: "虎牙直播 v0.3.20",
   description: "在 Rex 中浏览、搜索和播放虎牙直播，提供分类导航、房间状态识别和多线路播放能力。",
   author: "ukonic",
-  version: "0.3.19",
+  version: "0.3.20",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   modules: [
@@ -27,7 +27,7 @@ WidgetMetadata = {
     {
       id: "huyaCategory",
       title: "虎牙热门分类",
-      description: "常用游戏与娱乐直播的快捷入口",
+      subtitle: "常用游戏与娱乐直播的快捷入口",
       functionName: "loadHuyaCategory",
       cacheDuration: 30,
       params: [
@@ -60,7 +60,7 @@ WidgetMetadata = {
     {
       id: "huyaOnlineGames",
       title: "网游竞技",
-      description: "电脑网络游戏与电竞分区",
+      subtitle: "电脑网络游戏与电竞分区",
       functionName: "loadHuyaCategory",
       cacheDuration: 30,
       params: [
@@ -91,7 +91,7 @@ WidgetMetadata = {
     {
       id: "huyaStandaloneGames",
       title: "单机游戏",
-      description: "单机、主机、沙盒与生存游戏分区",
+      subtitle: "单机、主机、沙盒与生存游戏分区",
       functionName: "loadHuyaCategory",
       cacheDuration: 30,
       params: [
@@ -122,7 +122,7 @@ WidgetMetadata = {
     {
       id: "huyaMobileGames",
       title: "手机游戏",
-      description: "热门手游与休闲手游分区",
+      subtitle: "热门手游与休闲手游分区",
       functionName: "loadHuyaCategory",
       cacheDuration: 30,
       params: [
@@ -153,7 +153,7 @@ WidgetMetadata = {
     {
       id: "huyaEntertainment",
       title: "娱乐生活",
-      description: "户外、才艺、体育、一起看与社交娱乐分区",
+      subtitle: "户外、才艺、体育、一起看与社交娱乐分区",
       functionName: "loadHuyaCategory",
       cacheDuration: 30,
       params: [
@@ -184,7 +184,7 @@ WidgetMetadata = {
     {
       id: "huyaCategoryByName",
       title: "按名称查找分类",
-      description: "不知道游戏 ID 时，输入分类中文名称直接打开",
+      subtitle: "不知道游戏 ID 时，输入分类中文名称直接打开",
       functionName: "loadHuyaCategoryByName",
       cacheDuration: 30,
       params: [
@@ -196,7 +196,7 @@ WidgetMetadata = {
           value: "一起看"
         },
         { name: "page", title: "页码", type: "page" },
-        { name: "count", title: "每页数量", type: "count", value: "30" }
+        { name: "count", title: "每页数量", type: "count", value: "20" }
       ]
     },
     {
@@ -217,7 +217,7 @@ WidgetMetadata = {
     {
       id: "huyaCustomCategory",
       title: "自定义游戏 ID",
-      description: "填写虎牙分类网址 /g/ 后面的数字；可从快捷对照中选择",
+      subtitle: "填写虎牙分类网址 /g/ 后面的数字；可从快捷对照中选择",
       functionName: "loadHuyaCategory",
       cacheDuration: 30,
       params: [
@@ -665,6 +665,16 @@ async function huyaLoadCategoryCatalog() {
   if (HUYA_CATEGORY_CACHE.items.length && HUYA_CATEGORY_CACHE.expiresAt > Date.now()) {
     return HUYA_CATEGORY_CACHE.items;
   }
+  var storageKey = "huya-category-catalog-v1";
+  try {
+    var cached = Widget.storage && Widget.storage.get(storageKey);
+    if (cached && Array.isArray(cached.items) && cached.items.length && cached.expiresAt > Date.now()) {
+      HUYA_CATEGORY_CACHE = cached;
+      return cached.items;
+    }
+  } catch (error) {
+    // 存储不可用时仍可实时读取目录。
+  }
 
   var types = [
     { id: "1", name: "网游竞技" },
@@ -687,6 +697,11 @@ async function huyaLoadCategoryCatalog() {
   }
   if (!items.length) throw new Error("虎牙没有返回分类目录");
   HUYA_CATEGORY_CACHE = { items: items, expiresAt: Date.now() + 6 * 60 * 60 * 1000 };
+  try {
+    if (Widget.storage) Widget.storage.set(storageKey, HUYA_CATEGORY_CACHE);
+  } catch (error) {
+    // 写入缓存失败不影响本次分类查询。
+  }
   return items;
 }
 
@@ -744,6 +759,8 @@ async function loadHuyaCategoryByName(params) {
   params = params || {};
   var contextItems = await huyaContextItems(params);
   if (contextItems) return contextItems;
+  var page = Math.max(1, Math.floor(Number(params.page)) || 1);
+  var count = Math.min(60, Math.max(1, Math.floor(Number(params.count)) || 20));
   var query = huyaText(params.categoryName).trim();
   var normalizedQuery = huyaNormalizeCategoryName(query);
   if (!normalizedQuery) {
@@ -776,7 +793,8 @@ async function loadHuyaCategoryByName(params) {
     )];
   }
 
-  return matches.slice(0, 20).map(function (entry) {
+  var start = (page - 1) * count;
+  return matches.slice(start, start + count).map(function (entry) {
     return huyaCategoryCard(entry);
   });
 }
@@ -838,12 +856,19 @@ async function searchHuyaRooms(params) {
   params = params || {};
   var contextItems = await huyaContextItems(params);
   if (contextItems) return contextItems;
+  var includeOffline = huyaBooleanValue(params.includeOffline) !== false;
   var directRoomId = huyaRoomId(params.roomId);
   if (directRoomId) {
     try {
-      return await loadHuyaRoomById({ roomId: directRoomId });
+      var snapshot = await huyaRoomSnapshot(directRoomId);
+      return [huyaRoomItemFromSnapshot(directRoomId, snapshot)];
     } catch (error) {
-      // 房间号搜索只展示正在直播且有有效 HLS 线路的房间。
+      if (includeOffline && error && error.code === "HUYA_OFFLINE") {
+        var offlineData = huyaOfflineDataWithError(directRoomId, null, error);
+        var roomLink = HUYA_BASE + "/" + encodeURIComponent(directRoomId);
+        var offlineItem = huyaOfflineItemForLink(roomLink, directRoomId, offlineData);
+        return [huyaEnrichOfflineItem(offlineItem, directRoomId, offlineData, error.roomData)];
+      }
       if (huyaShouldHideUnavailableRoom(error)) return [];
       throw error;
     }
@@ -853,8 +878,6 @@ async function searchHuyaRooms(params) {
   var page = Math.max(1, Number(params.page || 1));
   var count = Math.max(1, Math.min(50, Number(params.count || 30)));
   var start = (page - 1) * count;
-  var includeOfflineValue = huyaBooleanValue(params.includeOffline === undefined ? "1" : params.includeOffline);
-  var includeOffline = includeOfflineValue !== false;
   var url = "https://search.cdn.huya.com/?m=Search&do=getSearchContent&q=" +
     encodeURIComponent(keyword) + "&uid=0&v=1&typ=-5&livestate=0&rows=" + count + "&start=" + start;
   var result = await huyaGetJson(url);
@@ -1376,7 +1399,7 @@ async function huyaCategoryDetail(gameId) {
 
 async function loadDetail(link) {
   var route = huyaOwnedRoute(link);
-  if (!route) return null;
+  if (!route) return [];
   var messageItem = huyaMessageCardFromLink(link);
   if (messageItem) return messageItem;
   var categoryId = huyaCategoryIdFromLink(link);
@@ -1384,7 +1407,7 @@ async function loadDetail(link) {
   var offlineData = huyaOfflineDataFromLink(link);
   var offlineItem = huyaOfflineItemFromLink(link);
   var roomId = route.kind === "room" ? route.roomId : "";
-  if (!roomId) return null;
+  if (!roomId) return [];
   var snapshot;
   try {
     // 即使搜索时显示未开播，进入详情仍重新检查，主播刚开播时立即转为直播详情。
