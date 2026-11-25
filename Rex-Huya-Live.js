@@ -1,16 +1,18 @@
 /* WidgetMetadata {
   "id": "com.local.rex.huya.live.test",
-  "title": "虎牙直播 v0.3.20",
-  "version": "0.3.20",
+  "title": "虎牙直播 v0.3.21",
+  "version": "0.3.21",
+  "iconurl": "https://www.huya.com/favicon.ico",
   "author": "ukonic"
 } */
 
 WidgetMetadata = {
   id: "com.local.rex.huya.live.test",
-  title: "虎牙直播 v0.3.20",
+  title: "虎牙直播 v0.3.21",
   description: "在 Rex 中浏览、搜索和播放虎牙直播，提供分类导航、房间状态识别和多线路播放能力。",
   author: "ukonic",
-  version: "0.3.20",
+  iconurl: "https://www.huya.com/favicon.ico",
+  version: "0.3.21",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   modules: [

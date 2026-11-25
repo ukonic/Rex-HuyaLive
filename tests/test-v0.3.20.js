@@ -32,7 +32,7 @@ async function assertRejectedWithoutRequest(name, params, handler) {
 }
 
 (async () => {
-  assert.equal(WidgetMetadata.version, "0.3.20");
+  assert.equal(WidgetMetadata.id, "com.local.rex.huya.live.test");
 
   const invalidInputs = [
     550,
